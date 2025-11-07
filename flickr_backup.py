@@ -233,6 +233,18 @@ class FlickrBackup:
 
         try:
             response = oauth.get(self.base_url, params=params, timeout=30)
+
+            # Check for rate limit (429 Too Many Requests)
+            if response.status_code == 429:
+                self.logger.error("=" * 70)
+                self.logger.error("Rate limit exceeded (HTTP 429)")
+                self.logger.error(
+                    "Flickr API has rejected the request due to too many requests."
+                )
+                self.logger.error("Please wait and try again later.")
+                self.logger.error("=" * 70)
+                sys.exit(1)
+
             response.raise_for_status()
             data = response.json()
 
@@ -240,6 +252,24 @@ class FlickrBackup:
                 raise Exception(f"API error: {data.get('message', 'Unknown error')}")
 
             return data
+        except requests.exceptions.HTTPError as e:
+            # Check if this is a 429 error that got past our check
+            if e.response is not None and e.response.status_code == 429:
+                self.logger.error("=" * 70)
+                self.logger.error("Rate limit exceeded (HTTP 429)")
+                self.logger.error(
+                    "Flickr API has rejected the request due to too many requests."
+                )
+                self.logger.error("Please wait and try again later.")
+                self.logger.error("=" * 70)
+                sys.exit(1)
+            # For other HTTP errors, retry if allowed
+            if retry:
+                self.logger.warning(f"API call failed, retrying once: {e}")
+                time.sleep(2)
+                return self.api_call(method, params, retry=False)
+            else:
+                raise
         except Exception as e:
             if retry:
                 self.logger.warning(f"API call failed, retrying once: {e}")
@@ -317,6 +347,18 @@ class FlickrBackup:
         """Download a file with retry logic"""
         try:
             response = requests.get(url, stream=True, timeout=60)
+
+            # Check for rate limit (429 Too Many Requests)
+            if response.status_code == 429:
+                self.logger.error("=" * 70)
+                self.logger.error("Rate limit exceeded (HTTP 429)")
+                self.logger.error(
+                    "Flickr API has rejected the request due to too many requests."
+                )
+                self.logger.error("Please wait and try again later.")
+                self.logger.error("=" * 70)
+                sys.exit(1)
+
             response.raise_for_status()
 
             with open(filepath, "wb") as f:
@@ -324,6 +366,24 @@ class FlickrBackup:
                     f.write(chunk)
 
             return True
+        except requests.exceptions.HTTPError as e:
+            # Check if this is a 429 error that got past our check
+            if e.response is not None and e.response.status_code == 429:
+                self.logger.error("=" * 70)
+                self.logger.error("Rate limit exceeded (HTTP 429)")
+                self.logger.error(
+                    "Flickr API has rejected the request due to too many requests."
+                )
+                self.logger.error("Please wait and try again later.")
+                self.logger.error("=" * 70)
+                sys.exit(1)
+            # For other HTTP errors, retry if allowed
+            self.logger.error(f"Download failed: {e}")
+            if retry:
+                self.logger.info("Retrying download once...")
+                time.sleep(2)
+                return self.download_file(url, filepath, retry=False)
+            return False
         except Exception as e:
             self.logger.error(f"Download failed: {e}")
             if retry:
