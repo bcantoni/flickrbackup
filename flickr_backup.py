@@ -216,6 +216,22 @@ class FlickrBackup:
             self.logger.warning(f"Saved tokens are invalid or expired: {e}")
             return False
 
+    def ensure_authenticated(self):
+        """Ensure we have valid OAuth tokens, performing authentication if needed"""
+        # Try to load saved tokens first
+        if self.load_tokens():
+            # Verify tokens are still valid
+            if self.verify_tokens():
+                self.logger.info("Using saved authentication")
+                return
+            else:
+                # Tokens invalid, need to re-authenticate
+                self.logger.info("Re-authenticating...")
+                self.oauth_authenticate()
+        else:
+            # No saved tokens, need to authenticate
+            self.oauth_authenticate()
+
     def api_call(self, method, params=None, retry=True):
         """Make an authenticated API call using OAuth"""
         if params is None:
@@ -323,7 +339,8 @@ class FlickrBackup:
                 "flickr.people.getPhotos",
                 {
                     "user_id": self.user_id,
-                    "extras": "url_o,original_format,media",
+                    # Include visibility flags for stats (safe to include for downloads too)
+                    "extras": "url_o,original_format,media,ispublic,isfriend,isfamily",
                     "page": page,
                     "per_page": 500,
                 },
@@ -505,18 +522,8 @@ class FlickrBackup:
         self.logger.info("Starting Flickr Backup")
         self.logger.info("=" * 70)
 
-        # Try to load saved tokens first
-        if self.load_tokens():
-            # Verify tokens are still valid
-            if self.verify_tokens():
-                self.logger.info("Using saved authentication")
-            else:
-                # Tokens invalid, need to re-authenticate
-                self.logger.info("Re-authenticating...")
-                self.oauth_authenticate()
-        else:
-            # No saved tokens, need to authenticate
-            self.oauth_authenticate()
+        # Ensure we are authenticated
+        self.ensure_authenticated()
 
         # Get all photos for tracking
         all_photos = self.get_all_photos()
@@ -563,6 +570,72 @@ class FlickrBackup:
         self.logger.info(f"Downloaded to: {self.backup_dir}")
         self.logger.info("=" * 70)
 
+    def stats(self):
+        """Gather and print statistics about albums and photo visibilities without downloading"""
+        self.logger.info("=" * 70)
+        self.logger.info("Starting Flickr Stats (no downloads)")
+        self.logger.info("=" * 70)
+
+        # Ensure we are authenticated
+        self.ensure_authenticated()
+
+        # Get all photosets (albums)
+        photosets = self.get_photosets()
+        num_albums = len(photosets)
+
+        # Get all photos with visibility flags
+        all_photos = self.get_all_photos()
+        num_photos = len(all_photos)
+
+        # Visibility breakdown
+        public = 0
+        friend_family = 0
+        private_only = 0
+
+        for p in all_photos:
+            ispublic = int(p.get("ispublic", 0))
+            isfriend = int(p.get("isfriend", 0))
+            isfamily = int(p.get("isfamily", 0))
+
+            if ispublic == 1:
+                public += 1
+            elif isfriend == 1 or isfamily == 1:
+                friend_family += 1
+            else:
+                private_only += 1
+
+        # Optional: count photos in albums vs unsorted
+        photos_in_albums = set()
+        for ps in photosets:
+            ps_photos = self.get_photoset_photos(ps["id"])
+            for p in ps_photos:
+                photos_in_albums.add(p["id"])
+
+        num_in_albums = len(photos_in_albums)
+        num_unsorted = max(0, num_photos - num_in_albums)
+
+        # Report
+        lines = [
+            "Flickr Library Statistics",
+            "-" * 70,
+            f"User ID: {self.user_id}",
+            f"Albums: {num_albums}",
+            f"Total photos: {num_photos}",
+            f"  Public: {public}",
+            f"  Friends/Family: {friend_family}",
+            f"  Private (you only): {private_only}",
+            f"Photos in albums: {num_in_albums}",
+            f"Unsorted photos: {num_unsorted}",
+            "-" * 70,
+        ]
+
+        report = "\n".join(lines)
+        print("\n" + report + "\n")
+        for line in lines:
+            self.logger.info(line)
+
+        self.logger.info("Stats collection complete")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -603,6 +676,12 @@ Examples:
         help="Force re-authentication (ignore saved tokens)",
     )
 
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Collect and print stats only (no downloads)",
+    )
+
     args = parser.parse_args()
 
     print("Flickr Photo Backup Script")
@@ -615,6 +694,8 @@ Examples:
         print(f"Token File: ~/.flickr_backup_tokens.json")
     if args.reauth:
         print("Mode: Force Re-authentication")
+    if args.stats:
+        print("Mode: Stats only (no downloads)")
     print("=" * 70)
 
     # Start backup
@@ -626,7 +707,10 @@ Examples:
         backup.token_file.unlink()
 
     try:
-        backup.backup()
+        if args.stats:
+            backup.stats()
+        else:
+            backup.backup()
     except KeyboardInterrupt:
         print("\n\nBackup interrupted by user")
         sys.exit(0)
