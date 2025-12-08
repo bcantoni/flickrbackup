@@ -1,5 +1,9 @@
 keys.txt
 .DS_Store
 backup/
+backup2/
 .python-version
 __pycache__/
+*.jpg
+*.json
+*.log
