@@ -302,6 +302,41 @@ class FlickrBackup:
         self.logger.info(f"Found {len(photosets)} photosets")
         return photosets
 
+    def get_album_date(self, photoset, photos):
+        """
+        Get the date for an album folder name.
+        Uses the album creation date if available, otherwise falls back to
+        the date the first photo in the album was taken.
+        Returns a string in YYYY-MM-DD format.
+        """
+        # Try to use album creation date (Unix timestamp)
+        date_create = photoset.get("date_create")
+        if date_create:
+            try:
+                dt = datetime.fromtimestamp(int(date_create))
+                return dt.strftime("%Y-%m-%d")
+            except (ValueError, TypeError):
+                pass
+
+        # Fall back to first photo's date taken
+        if photos:
+            first_photo = photos[0]
+            try:
+                photo_info = self.get_photo_info(first_photo["id"])
+                date_taken = photo_info.get("dates", {}).get("taken", "")
+                if date_taken:
+                    # date_taken format is "YYYY-MM-DD HH:MM:SS"
+                    dt = datetime.strptime(date_taken, "%Y-%m-%d %H:%M:%S")
+                    return dt.strftime("%Y-%m-%d")
+            except (ValueError, TypeError, KeyError) as e:
+                self.logger.warning(f"Could not parse date taken for first photo: {e}")
+
+        # Last resort: use current date
+        self.logger.warning(
+            f"Could not determine date for album '{photoset.get('title', {}).get('_content', 'Unknown')}', using today's date"
+        )
+        return datetime.now().strftime("%Y-%m-%d")
+
     def get_photoset_photos(self, photoset_id):
         """Get all photos in a photoset"""
         photos = []
@@ -537,16 +572,22 @@ class FlickrBackup:
             photoset_id = photoset["id"]
             title = photoset["title"]["_content"]
 
+            # Get photos first so we can determine the album date
+            photos = self.get_photoset_photos(photoset_id)
+
+            # Get album date for folder name
+            album_date = self.get_album_date(photoset, photos)
+
             # Clean album name for folder
             safe_title = "".join(
                 c for c in title if c.isalnum() or c in (" ", "-", "_")
             ).strip()
-            album_folder = self.backup_dir / safe_title
+            folder_name = f"{album_date} {safe_title}"
+            album_folder = self.backup_dir / folder_name
             album_folder.mkdir(exist_ok=True)
 
             self.logger.info(f"\nProcessing album: {title}")
-
-            photos = self.get_photoset_photos(photoset_id)
+            self.logger.info(f"Folder: {folder_name}")
             self.logger.info(f"Album has {len(photos)} photos")
 
             for photo in photos:
