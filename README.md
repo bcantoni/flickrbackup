@@ -1,28 +1,43 @@
-# Flickr Photo Backup Script
+# Flickr Backup & Stats Tools
 
-A Python script to download your entire Flickr photo collection with metadata, organized into album folders.
+A collection of Python scripts to backup your Flickr photo collection and analyze your photo statistics.
+
+## Scripts Overview
+
+| Script | Purpose |
+|--------|---------|
+| `flickr_backup.py` | Download your entire Flickr photo collection with metadata |
+| `flickr_stats.py` | View your most popular photos and view statistics |
+| `flickr_stats_csv.py` | Export all photos with comprehensive metadata to CSV |
 
 ## Features
 
-- ✅ OAuth authentication flow with persistent token storage
-- ✅ Downloads original quality photos and videos
-- ✅ Organizes photos by album into folders
-- ✅ Embeds metadata (title, description, tags, date) into EXIF data
-- ✅ Saves detailed metadata as JSON files
-- ✅ Resume capability - skips already downloaded files
-- ✅ Automatic retry on failed downloads
-- ✅ Comprehensive logging
-- ✅ Handles photos not in any album (Unsorted folder)
-- ✅ OAuth tokens persist across runs (no re-auth needed)
-- ✅ Automatic token validation and refresh
-- ✅ Secure token storage with proper file permissions
-- ✅ Command-line interface with flexible options
+### flickr_backup.py - Photo Backup
+- OAuth authentication with persistent token storage
+- Downloads original quality photos and videos
+- Organizes photos by album into folders
+- Embeds metadata (title, description, tags, date) into EXIF data
+- Saves detailed metadata as JSON files
+- Resume capability - skips already downloaded files
+- Automatic retry on failed downloads
+
+### flickr_stats.py - View Statistics
+- Displays your most viewed photos
+- Shows total view counts (photostream, photos, sets, collections)
+- Uses Flickr Stats API for Pro accounts, falls back to view counts for free accounts
+- Optional JSON output
+
+### flickr_stats_csv.py - CSV Export
+- Exports all photos to a comprehensive CSV file
+- Includes album membership, location, tags, privacy settings
+- Optional EXIF data (camera model, lens, aperture, ISO, etc.)
+- Great for analyzing your photo library in spreadsheet software
 
 ## Prerequisites
 
 - Python 3.7 or higher
 - A Flickr account with photos
-- Flickr API credentials (see setup below)
+- Flickr API credentials
 
 ## Setup
 
@@ -48,98 +63,212 @@ pip install Pillow piexif requests requests-oauthlib
 
 ## Authentication & Token Persistence
 
-The script uses OAuth 1.0a for authentication with robust token persistence:
+All scripts use OAuth 1.0a for authentication with shared token persistence:
 
-### How Token Persistence Works
+### How It Works
 
-1. **First Run**: The script opens your browser for OAuth authorization and saves tokens to `~/.flickr_backup_tokens.json`
-2. **Subsequent Runs**: Tokens are automatically loaded and validated - no browser authorization needed
-3. **Token Validation**: Before each run, tokens are tested with the Flickr API
-4. **Auto Re-auth**: If tokens are invalid or expired, the script automatically prompts for re-authentication
-5. **Security**: Token file is stored in your home directory with restricted permissions (chmod 600)
+1. **First Run**: Opens your browser for OAuth authorization and saves tokens to `~/.flickr_backup_tokens.json`
+2. **Subsequent Runs**: Tokens are automatically loaded and validated - no browser needed
+3. **Token Validation**: Tokens are tested with the Flickr API before each run
+4. **Auto Re-auth**: Invalid/expired tokens trigger automatic re-authentication
+5. **Security**: Token file has restricted permissions (chmod 600)
 
 ### Token File Location
 
-- **Default**: `~/.flickr_backup_tokens.json` (in your home directory)
+- **Default**: `~/.flickr_backup_tokens.json`
 - **Custom**: Use `-t` or `--token-file` to specify a different location
-- **Security**: File permissions are automatically set to user-only (600)
-- **Format**: JSON file containing access tokens, user ID, API key, and timestamp
 
-### Token Management
-
-**Automatic token validation**:
-
-- Saved tokens are checked against your current API key
-- API test call validates tokens before use
-- Invalid/expired tokens trigger automatic re-authentication
-
-**Force re-authentication**:
+### Force Re-authentication
 
 ```bash
 python flickr_backup.py -k YOUR_KEY -s YOUR_SECRET --reauth
 ```
 
-**Use custom token file** (useful for multiple Flickr accounts):
+---
+
+## flickr_backup.py - Photo Backup
+
+Downloads your entire Flickr photo collection organized by album.
+
+### Usage
 
 ```bash
-python flickr_backup.py -k YOUR_KEY -s YOUR_SECRET -t /path/to/custom_tokens.json
-```
-
-### 3. Run the Script
-
-Basic usage:
-
-```bash
-python flickr_backup.py --key YOUR_API_KEY --secret YOUR_API_SECRET
-```
-
-With custom backup directory:
-
-```bash
-python flickr_backup.py --key YOUR_API_KEY --secret YOUR_API_SECRET --dir /path/to/backup
-```
-
-Short form:
-
-```bash
-python flickr_backup.py -k YOUR_API_KEY -s YOUR_API_SECRET -d ./my_backup
-```
-
-Force re-authentication (ignore saved tokens):
-
-```bash
-python flickr_backup.py -k YOUR_API_KEY -s YOUR_API_SECRET --reauth
-```
-
-### Command Line Options
-
-- `-k, --key` - Flickr API Key (required)
-- `-s, --secret` - Flickr API Secret (required)
-- `-d, --dir` - Backup directory path (default: `./flickr_backup`)
-- `-t, --token-file` - Custom path for storing OAuth tokens (default: `~/.flickr_backup_tokens.json`)
-- `--reauth` - Force re-authentication, ignoring any saved tokens
-
-### Examples
-
-**Basic usage** (uses default backup directory):
-
-```bash
+# Basic usage (downloads to ./flickr_backup)
 python flickr_backup.py -k YOUR_API_KEY -s YOUR_API_SECRET
-```
 
-**Custom backup directory**:
-
-```bash
+# Custom backup directory
 python flickr_backup.py -k YOUR_API_KEY -s YOUR_API_SECRET -d /path/to/backup
-```
 
-**Force re-authentication** (ignore saved tokens):
-
-```bash
+# Force re-authentication
 python flickr_backup.py -k YOUR_API_KEY -s YOUR_API_SECRET --reauth
 ```
 
-**Multiple Flickr accounts** (use different token files):
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `-k, --key` | Flickr API Key (required) |
+| `-s, --secret` | Flickr API Secret (required) |
+| `-d, --dir` | Backup directory (default: `./flickr_backup`) |
+| `-t, --token-file` | Custom token file path |
+| `--reauth` | Force re-authentication |
+
+### What Gets Downloaded
+
+- **Original quality** photos (highest resolution available)
+- **Videos** (if you have any)
+- **Metadata** embedded in EXIF (title, description, tags, date taken)
+- **JSON metadata files** with complete photo information
+
+### Folder Structure
+
+```
+flickr_backup/
+├── Album Name 1/
+│   ├── 12345678.jpg
+│   ├── 12345678.jpg.json
+│   └── ...
+├── Album Name 2/
+│   └── ...
+├── Unsorted/              # Photos not in any album
+├── .download_tracker.json # Resume tracking
+└── flickr_backup_*.log    # Log file
+
+~/.flickr_backup_tokens.json  # OAuth tokens (keep private!)
+```
+
+### Resume Capability
+
+The script tracks downloads in `.download_tracker.json`. If interrupted, just run again - it will skip already downloaded files.
+
+---
+
+## flickr_stats.py - View Statistics
+
+Displays your most popular photos by view count.
+
+### Usage
+
+```bash
+# Show top 20 most viewed photos
+python flickr_stats.py -k YOUR_API_KEY -s YOUR_API_SECRET
+
+# Show top 50 photos
+python flickr_stats.py -k YOUR_API_KEY -s YOUR_API_SECRET --top 50
+
+# Save results to JSON
+python flickr_stats.py -k YOUR_API_KEY -s YOUR_API_SECRET -o stats.json
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `-k, --key` | Flickr API Key (required) |
+| `-s, --secret` | Flickr API Secret (required) |
+| `--top` | Number of top photos to display (default: 20) |
+| `-o, --output` | Output JSON file path |
+| `-t, --token-file` | Custom token file path |
+| `--reauth` | Force re-authentication |
+
+### Output Example
+
+```
+Total Views Summary
+----------------------------------------------------------------------
+  Photostream: 125,432
+  Photos: 98,234
+  Sets: 27,198
+  Collections: 0
+======================================================================
+
+Top 20 Most Popular Photos (from Stats API)
+----------------------------------------------------------------------
+  1.    12543 views - Beautiful Sunset at the Beach
+       https://www.flickr.com/photos/12345678@N00/51234567890
+  2.     8932 views - Mountain Landscape
+       https://www.flickr.com/photos/12345678@N00/51234567891
+...
+```
+
+---
+
+## flickr_stats_csv.py - CSV Export
+
+Exports all your photos with comprehensive metadata to a CSV file.
+
+### Usage
+
+```bash
+# Basic export
+python flickr_stats_csv.py -k YOUR_API_KEY -s YOUR_API_SECRET
+
+# Custom output file
+python flickr_stats_csv.py -k YOUR_API_KEY -s YOUR_API_SECRET -o my_photos.csv
+
+# Include EXIF data (slower - extra API call per photo)
+python flickr_stats_csv.py -k YOUR_API_KEY -s YOUR_API_SECRET --exif
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `-k, --key` | Flickr API Key (required) |
+| `-s, --secret` | Flickr API Secret (required) |
+| `-o, --output` | Output CSV file (default: `flickr_photos.csv`) |
+| `--exif` | Fetch EXIF data (camera, lens, settings) |
+| `-t, --token-file` | Custom token file path |
+| `--reauth` | Force re-authentication |
+
+### CSV Columns
+
+| Column | Description |
+|--------|-------------|
+| `photo_id` | Flickr photo ID |
+| `title` | Photo title |
+| `description` | Photo description |
+| `filename` | Original format |
+| `album` | Album name(s) - semicolon-separated if in multiple |
+| `date_taken` | When the photo was taken |
+| `date_uploaded` | When uploaded to Flickr |
+| `location` | Human-readable location (city, region, country) |
+| `latitude` | GPS latitude |
+| `longitude` | GPS longitude |
+| `tags` | User tags |
+| `machine_tags` | Machine-readable tags |
+| `privacy` | public/private/friends/family/friends+family |
+| `views` | Lifetime view count |
+| `comments` | Number of comments |
+| `faves` | Number of favorites |
+| `camera_model` | Camera model (with `--exif`) |
+| `lens` | Lens used (with `--exif`) |
+| `aperture` | Aperture setting (with `--exif`) |
+| `shutter_speed` | Shutter speed (with `--exif`) |
+| `iso` | ISO setting (with `--exif`) |
+| `focal_length` | Focal length (with `--exif`) |
+| `media_type` | photo or video |
+| `url` | Direct link to photo page |
+
+### Output Summary
+
+After export, displays a summary:
+```
+Summary:
+  Total photos: 2,847
+  Photos in albums: 2,341
+  Photos with location: 1,892
+  Public photos: 2,102
+  Private photos: 745
+  Total views: 156,234
+  Output file: flickr_photos.csv
+```
+
+---
+
+## Multiple Flickr Accounts
+
+Use different token files for multiple accounts:
 
 ```bash
 # Account 1
@@ -149,146 +278,58 @@ python flickr_backup.py -k KEY1 -s SECRET1 -d ./account1 -t ~/.tokens_account1.j
 python flickr_backup.py -k KEY2 -s SECRET2 -d ./account2 -t ~/.tokens_account2.json
 ```
 
-## Usage
-
-### First Run - Authentication
-
-On first run, the script will:
-
-1. Open your browser to Flickr's authorization page
-2. Ask you to authorize the application
-3. Prompt you to enter the verification code shown on the page
-4. Save the authentication tokens to `~/.flickr_backup_tokens.json` for future runs
-
-### Subsequent Runs
-
-The script automatically loads and validates saved OAuth tokens from `~/.flickr_backup_tokens.json`, so you won't need to authorize again unless:
-
-- The tokens expire (rare for Flickr OAuth tokens)
-- You use the `--reauth` flag to force re-authentication
-- You switch to a different API key
-
-If saved tokens are invalid, the script will automatically prompt you to re-authenticate.
-
-## What Gets Downloaded
-
-- **Original quality** photos (highest resolution available)
-- **Videos** (if you have any)
-- **Metadata** embedded in EXIF:
-  - Title
-  - Description
-  - Tags
-  - Date taken
-- **JSON metadata files** with complete photo information
-
-## Folder Structure
-
-```
-flickr_backup/
-├── Album Name 1/
-│   ├── 12345678.jpg
-│   ├── 12345678.jpg.json
-│   ├── 12345679.jpg
-│   └── 12345679.jpg.json
-├── Album Name 2/
-│   └── ...
-├── Unsorted/          # Photos not in any album
-│   └── ...
-├── .download_tracker.json  # Resume tracking
-└── flickr_backup_20241103_143022.log  # Log file
-
-~/.flickr_backup_tokens.json    # OAuth tokens (stored in home directory, keep private!)
-```
-
-## Resume Capability
-
-The script tracks downloaded files in `.download_tracker.json`. If the backup is interrupted:
-
-1. Simply run the script again
-2. It will skip files that were already successfully downloaded
-3. Continue from where it left off
-
-## Logging
-
-Each run creates a timestamped log file with:
-
-- Progress updates
-- Download status for each photo
-- Any errors or warnings
-- Summary statistics
-
-Logs are saved in the backup directory.
+---
 
 ## Troubleshooting
 
 ### Authentication Issues
 
-**"No saved tokens found"**
-
-- Normal on first run - the script will prompt for OAuth authorization
-- Tokens will be saved for future runs
-
-**"Saved tokens are for a different API key"**
-
-- You're using different API credentials than the saved tokens
-- Script will automatically prompt for new authorization with the current API key
-
-**"Saved tokens are invalid or expired"**
-
-- Tokens have become invalid (rare for Flickr)
-- Script will automatically re-authenticate
-- Or use `--reauth` to force fresh authentication
-
-**"Could not load saved tokens"**
-
-- Token file may be corrupted
-- Use `--reauth` to create fresh tokens
-- Or manually delete `~/.flickr_backup_tokens.json` and run again
+| Message | Solution |
+|---------|----------|
+| "No saved tokens found" | Normal on first run - authorize when prompted |
+| "Saved tokens are for a different API key" | Using different credentials - will re-authenticate |
+| "Saved tokens are invalid or expired" | Will automatically re-authenticate |
+| "Could not load saved tokens" | Use `--reauth` or delete `~/.flickr_backup_tokens.json` |
 
 ### Download Issues
 
-**"No original URL for photo"**
-Some photos may not have original quality available due to Flickr settings. These will be skipped.
+| Issue | Solution |
+|-------|----------|
+| "No original URL for photo" | Photo doesn't have original quality available - skipped |
+| Download failures | Script auto-retries once; check internet connection |
+| Rate limiting | Script handles this; large collections just take time |
 
-**Download failures**
-The script automatically retries failed downloads once. If downloads continue to fail, check your internet connection.
+### CSV Export Issues
 
-### Performance
+| Issue | Solution |
+|-------|----------|
+| Slow export with `--exif` | EXIF requires extra API call per photo - expected |
+| Missing location data | Not all photos have GPS coordinates |
+| Empty album column | Photo isn't in any album |
 
-**Rate limiting**
-Flickr API has rate limits. The script handles this gracefully, but very large collections may take time.
+---
 
 ## Privacy & Security
 
-- **Keep your API credentials private** - don't share them
-- **`~/.flickr_backup_tokens.json` contains access tokens** - keep this file private and secure
-- **Token file permissions** are automatically set to `600` (user read/write only)
-- **Tokens stored outside backup directory** - won't be accidentally shared or backed up
-- **API key verification** - tokens are validated against your current API key
-- The script only requests **read** permissions from Flickr
-- All processing happens locally on your machine
-- No data is sent to third parties
+- **Keep API credentials private** - don't share or commit them
+- **Token file (`~/.flickr_backup_tokens.json`)** contains access tokens - keep private
+- **Token file permissions** are automatically set to `600` (user-only)
+- All scripts only request **read** permissions from Flickr
+- All processing happens locally - no data sent to third parties
 
-## Benefits of Token Persistence
-
-1. **Convenience** - Authorize once, use indefinitely (until tokens expire)
-2. **Automation-Friendly** - Can be scheduled/scripted without manual intervention
-3. **Faster** - Skip OAuth flow on subsequent runs
-4. **Secure** - Tokens stored with proper permissions in home directory
-5. **Flexible** - Support for multiple accounts via custom token files
-6. **Reliable** - Automatic token validation and re-authentication when needed
+---
 
 ## Notes
 
-- Photos in multiple albums will be downloaded once per album (duplicates created)
-- The script uses the Flickr API's original quality URL when available
-- Videos are downloaded but metadata is saved as JSON only (no EXIF embedding for videos)
-- EXIF embedding only works with JPEG files
+- Photos in multiple albums are downloaded once per album (creates duplicates)
+- Videos are downloaded but EXIF embedding only works with JPEG files
+- Flickr Pro accounts get richer stats data via the Stats API
+- The `--exif` flag significantly increases export time due to per-photo API calls
 
 ## License
 
-This script is provided as-is for personal use. Respect Flickr's Terms of Service and API usage guidelines.
+These scripts are provided as-is for personal use. Respect Flickr's Terms of Service and API usage guidelines.
 
 ## Support
 
-For issues or questions about the Flickr API, see: https://www.flickr.com/services/api/
+For Flickr API documentation: https://www.flickr.com/services/api/
