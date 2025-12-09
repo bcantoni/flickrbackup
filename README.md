@@ -4,15 +4,16 @@ A collection of Python scripts to backup your Flickr photo collection and analyz
 
 ## Scripts Overview
 
-| Script | Purpose |
-|--------|---------|
-| `flickr_backup.py` | Download your entire Flickr photo collection with metadata |
-| `flickr_stats.py` | View your most popular photos and view statistics |
-| `flickr_stats_csv.py` | Export all photos with comprehensive metadata to CSV |
+| Script                | Purpose                                                    |
+| --------------------- | ---------------------------------------------------------- |
+| `flickr_backup.py`    | Download your entire Flickr photo collection with metadata |
+| `flickr_stats.py`     | View your most popular photos and view statistics          |
+| `flickr_stats_csv.py` | Export all photos metadata to CSV file                     |
 
 ## Features
 
 ### flickr_backup.py - Photo Backup
+
 - OAuth authentication with persistent token storage
 - Downloads original quality photos and videos
 - Organizes photos by album into folders
@@ -22,20 +23,22 @@ A collection of Python scripts to backup your Flickr photo collection and analyz
 - Automatic retry on failed downloads
 
 ### flickr_stats.py - View Statistics
+
 - Displays your most viewed photos
 - Shows total view counts (photostream, photos, sets, collections)
 - Uses Flickr Stats API for Pro accounts, falls back to view counts for free accounts
 - Optional JSON output
 
 ### flickr_stats_csv.py - CSV Export
-- Exports all photos to a comprehensive CSV file
+
+- Exports all photo metadata to a comprehensive CSV file
 - Includes album membership, location, tags, privacy settings
 - Optional EXIF data (camera model, lens, aperture, ISO, etc.)
 - Great for analyzing your photo library in spreadsheet software
 
 ## Prerequisites
 
-- Python 3.7 or higher
+- A supported Python version (developed on Python 3.14)
 - A Flickr account with photos
 - Flickr API credentials
 
@@ -53,12 +56,6 @@ A collection of Python scripts to backup your Flickr photo collection and analyz
 
 ```bash
 pip install -r requirements.txt
-```
-
-Or install manually:
-
-```bash
-pip install Pillow piexif requests requests-oauthlib
 ```
 
 ## Authentication & Token Persistence
@@ -88,7 +85,7 @@ python flickr_backup.py -k YOUR_KEY -s YOUR_SECRET --reauth
 
 ## flickr_backup.py - Photo Backup
 
-Downloads your entire Flickr photo collection organized by album.
+Downloads your entire Flickr photo collection organized by album (name & date).
 
 ### Usage
 
@@ -105,13 +102,13 @@ python flickr_backup.py -k YOUR_API_KEY -s YOUR_API_SECRET --reauth
 
 ### Options
 
-| Option | Description |
-|--------|-------------|
-| `-k, --key` | Flickr API Key (required) |
-| `-s, --secret` | Flickr API Secret (required) |
-| `-d, --dir` | Backup directory (default: `./flickr_backup`) |
-| `-t, --token-file` | Custom token file path |
-| `--reauth` | Force re-authentication |
+| Option             | Description                                   |
+| ------------------ | --------------------------------------------- |
+| `-k, --key`        | Flickr API Key (required)                     |
+| `-s, --secret`     | Flickr API Secret (required)                  |
+| `-d, --dir`        | Backup directory (default: `./flickr_backup`) |
+| `-t, --token-file` | Custom token file path                        |
+| `--reauth`         | Force re-authentication                       |
 
 ### What Gets Downloaded
 
@@ -162,14 +159,14 @@ python flickr_stats.py -k YOUR_API_KEY -s YOUR_API_SECRET -o stats.json
 
 ### Options
 
-| Option | Description |
-|--------|-------------|
-| `-k, --key` | Flickr API Key (required) |
-| `-s, --secret` | Flickr API Secret (required) |
-| `--top` | Number of top photos to display (default: 20) |
-| `-o, --output` | Output JSON file path |
-| `-t, --token-file` | Custom token file path |
-| `--reauth` | Force re-authentication |
+| Option             | Description                                   |
+| ------------------ | --------------------------------------------- |
+| `-k, --key`        | Flickr API Key (required)                     |
+| `-s, --secret`     | Flickr API Secret (required)                  |
+| `--top`            | Number of top photos to display (default: 20) |
+| `-o, --output`     | Output JSON file path                         |
+| `-t, --token-file` | Custom token file path                        |
+| `--reauth`         | Force re-authentication                       |
 
 ### Output Example
 
@@ -195,12 +192,12 @@ Top 20 Most Popular Photos (from Stats API)
 
 ## flickr_stats_csv.py - CSV Export
 
-Exports all your photos with comprehensive metadata to a CSV file.
+Exports all your photo metadata to a CSV file.
 
 ### Usage
 
 ```bash
-# Basic export
+# Default stats download
 python flickr_stats_csv.py -k YOUR_API_KEY -s YOUR_API_SECRET
 
 # Custom output file
@@ -212,47 +209,48 @@ python flickr_stats_csv.py -k YOUR_API_KEY -s YOUR_API_SECRET --exif
 
 ### Options
 
-| Option | Description |
-|--------|-------------|
-| `-k, --key` | Flickr API Key (required) |
-| `-s, --secret` | Flickr API Secret (required) |
-| `-o, --output` | Output CSV file (default: `flickr_photos.csv`) |
-| `--exif` | Fetch EXIF data (camera, lens, settings) |
-| `-t, --token-file` | Custom token file path |
-| `--reauth` | Force re-authentication |
+| Option             | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| `-k, --key`        | Flickr API Key (required)                      |
+| `-s, --secret`     | Flickr API Secret (required)                   |
+| `-o, --output`     | Output CSV file (default: `flickr_photos.csv`) |
+| `--exif`           | Fetch EXIF data (camera, lens, settings)       |
+| `-t, --token-file` | Custom token file path                         |
+| `--reauth`         | Force re-authentication                        |
 
 ### CSV Columns
 
-| Column | Description |
-|--------|-------------|
-| `photo_id` | Flickr photo ID |
-| `title` | Photo title |
-| `description` | Photo description |
-| `filename` | Original format |
-| `album` | Album name(s) - semicolon-separated if in multiple |
-| `date_taken` | When the photo was taken |
-| `date_uploaded` | When uploaded to Flickr |
-| `location` | Human-readable location (city, region, country) |
-| `latitude` | GPS latitude |
-| `longitude` | GPS longitude |
-| `tags` | User tags |
-| `machine_tags` | Machine-readable tags |
-| `privacy` | public/private/friends/family/friends+family |
-| `views` | Lifetime view count |
-| `comments` | Number of comments |
-| `faves` | Number of favorites |
-| `camera_model` | Camera model (with `--exif`) |
-| `lens` | Lens used (with `--exif`) |
-| `aperture` | Aperture setting (with `--exif`) |
-| `shutter_speed` | Shutter speed (with `--exif`) |
-| `iso` | ISO setting (with `--exif`) |
-| `focal_length` | Focal length (with `--exif`) |
-| `media_type` | photo or video |
-| `url` | Direct link to photo page |
+| Column          | Description                                        |
+| --------------- | -------------------------------------------------- |
+| `photo_id`      | Flickr photo ID                                    |
+| `title`         | Photo title                                        |
+| `description`   | Photo description                                  |
+| `filename`      | Original format                                    |
+| `album`         | Album name(s) - semicolon-separated if in multiple |
+| `date_taken`    | When the photo was taken                           |
+| `date_uploaded` | When uploaded to Flickr                            |
+| `location`      | Human-readable location (city, region, country)    |
+| `latitude`      | GPS latitude                                       |
+| `longitude`     | GPS longitude                                      |
+| `tags`          | User tags                                          |
+| `machine_tags`  | Machine-readable tags                              |
+| `privacy`       | public/private/friends/family/friends+family       |
+| `views`         | Lifetime view count                                |
+| `comments`      | Number of comments                                 |
+| `faves`         | Number of favorites                                |
+| `camera_model`  | Camera model (with `--exif`)                       |
+| `lens`          | Lens used (with `--exif`)                          |
+| `aperture`      | Aperture setting (with `--exif`)                   |
+| `shutter_speed` | Shutter speed (with `--exif`)                      |
+| `iso`           | ISO setting (with `--exif`)                        |
+| `focal_length`  | Focal length (with `--exif`)                       |
+| `media_type`    | photo or video                                     |
+| `url`           | Direct link to photo page                          |
 
 ### Output Summary
 
 After export, displays a summary:
+
 ```
 Summary:
   Total photos: 2,847
@@ -284,28 +282,28 @@ python flickr_backup.py -k KEY2 -s SECRET2 -d ./account2 -t ~/.tokens_account2.j
 
 ### Authentication Issues
 
-| Message | Solution |
-|---------|----------|
-| "No saved tokens found" | Normal on first run - authorize when prompted |
-| "Saved tokens are for a different API key" | Using different credentials - will re-authenticate |
-| "Saved tokens are invalid or expired" | Will automatically re-authenticate |
-| "Could not load saved tokens" | Use `--reauth` or delete `~/.flickr_backup_tokens.json` |
+| Message                                    | Solution                                                |
+| ------------------------------------------ | ------------------------------------------------------- |
+| "No saved tokens found"                    | Normal on first run - authorize when prompted           |
+| "Saved tokens are for a different API key" | Using different credentials - will re-authenticate      |
+| "Saved tokens are invalid or expired"      | Will automatically re-authenticate                      |
+| "Could not load saved tokens"              | Use `--reauth` or delete `~/.flickr_backup_tokens.json` |
 
 ### Download Issues
 
-| Issue | Solution |
-|-------|----------|
+| Issue                       | Solution                                                |
+| --------------------------- | ------------------------------------------------------- |
 | "No original URL for photo" | Photo doesn't have original quality available - skipped |
-| Download failures | Script auto-retries once; check internet connection |
-| Rate limiting | Script handles this; large collections just take time |
+| Download failures           | Script auto-retries once; check internet connection     |
+| Rate limiting               | Script handles this; large collections just take time   |
 
 ### CSV Export Issues
 
-| Issue | Solution |
-|-------|----------|
+| Issue                     | Solution                                          |
+| ------------------------- | ------------------------------------------------- |
 | Slow export with `--exif` | EXIF requires extra API call per photo - expected |
-| Missing location data | Not all photos have GPS coordinates |
-| Empty album column | Photo isn't in any album |
+| Missing location data     | Not all photos have GPS coordinates               |
+| Empty album column        | Photo isn't in any album                          |
 
 ---
 

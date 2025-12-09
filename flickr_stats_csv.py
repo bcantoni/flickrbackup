@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Flickr Stats CSV Export Script
-Exports all photos with comprehensive metadata to a CSV file.
+Exports metadata for all photos to a CSV file.
 """
 
 import os
@@ -547,7 +547,7 @@ class FlickrStatsCSV:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Export all Flickr photos with stats to CSV.",
+        description="Export all Flickr photo stats to CSV.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
